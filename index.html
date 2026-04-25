@@ -1,0 +1,1464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CollabSpace — Student Collaboration Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c12;
+    --surface: #12141c;
+    --surface2: #1a1d2a;
+    --border: rgba(255,255,255,0.08);
+    --accent: #3b82f6;
+    --accent2: #8b5cf6;
+    --accent3: #10b981;
+    --accent4: #f59e0b;
+    --text: #eef2f6;
+    --text-muted: #8f9bb3;
+    --danger: #ef4444;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --grad: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    --grad2: linear-gradient(135deg, #8b5cf6, #10b981);
+    --grad3: linear-gradient(135deg, #f59e0b, #ef4444);
+    --glow: 0 0 40px rgba(59,130,246,0.3);
+  }
+  body.light-mode {
+    --bg: #f0f4f8;
+    --surface: #ffffff;
+    --surface2: #e8edf2;
+    --border: rgba(0,0,0,0.1);
+    --text: #1a1d2a;
+    --text-muted: #4a5568;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, h4, h5 { font-family: 'Syne', sans-serif; }
+
+
+    .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+  }
+  /* ── GRAIN OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.4;
+  }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 10px; }
+
+  /* ── GLOW ORBS ── */
+  .orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(120px);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .orb-1 { width: 600px; height: 600px; background: rgba(59,130,246,0.12); top: -200px; left: -200px; }
+  .orb-2 { width: 500px; height: 500px; background: rgba(139,92,246,0.1); bottom: 200px; right: -200px; }
+  .orb-3 { width: 400px; height: 400px; background: rgba(16,185,129,0.08); top: 50%; left: 50%; transform: translate(-50%,-50%); }
+
+  /* ── PAGES ── */
+  .page { display: none; min-height: 100vh; position: relative; z-index: 1; }
+  .page.active { display: block; animation: fadeIn 0.4s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ── NAVBAR ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 1000;
+    padding: 0 2rem;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(10,12,18,0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.3rem;
+    background: var(--grad);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    cursor: pointer;
+    letter-spacing: -0.02em;
+  }
+
+  .nav-links { display: flex; gap: 0.25rem; align-items: center; }
+
+  .nav-links a {
+    color: var(--text-muted);
+    text-decoration: none;
+    padding: 0.4rem 0.8rem;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+  .nav-links a:hover, .nav-links a.active { color: var(--text); background: var(--surface2); }
+
+  .nav-actions { display: flex; gap: 0.5rem; align-items: center; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1.1rem;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s;
+    text-decoration: none;
+  }
+  .btn-primary { background: var(--grad); color: #fff; box-shadow: 0 4px 20px rgba(59,130,246,0.3); }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 25px rgba(59,130,246,0.45); }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-ghost { background: transparent; color: var(--text-muted); }
+  .btn-ghost:hover { color: var(--text); background: var(--surface2); }
+  .btn-success { background: var(--accent3); color: #fff; }
+  .btn-success:hover { background: #0ea271; }
+  .btn-sm { padding: 0.35rem 0.8rem; font-size: 0.8rem; }
+  .btn-lg { padding: 0.75rem 1.75rem; font-size: 1rem; border-radius: 12px; }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .card:hover { border-color: rgba(59,130,246,0.3); box-shadow: 0 4px 30px rgba(59,130,246,0.1); }
+
+  /* ── FORMS ── */
+  .form-group { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 1rem; }
+  .form-group label { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+  .form-group input, .form-group select, .form-group textarea {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.65rem 0.9rem;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+  .form-group textarea { resize: vertical; min-height: 100px; }
+
+  /* ── BADGE ── */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.6rem;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .badge-blue { background: rgba(59,130,246,0.15); color: var(--accent); }
+  .badge-purple { background: rgba(139,92,246,0.15); color: var(--accent2); }
+  .badge-green { background: rgba(16,185,129,0.15); color: var(--success); }
+  .badge-orange { background: rgba(245,158,11,0.15); color: var(--accent4); }
+  .badge-red { background: rgba(239,68,68,0.15); color: var(--danger); }
+
+  /* ── AVATAR ── */
+  .avatar {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: var(--grad);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.875rem;
+    color: #fff;
+    flex-shrink: 0;
+  }
+  .avatar-lg { width: 64px; height: 64px; font-size: 1.3rem; }
+  .avatar-group { display: flex; align-items: center; }
+  .avatar-group .avatar { margin-left: -8px; border: 2px solid var(--surface); }
+  .avatar-group .avatar:first-child { margin-left: 0; }
+
+  /* ── STAT CARD ── */
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .stat-card .stat-label { font-size: 0.75rem; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; }
+  .stat-card .stat-value { font-family: 'Syne', sans-serif; font-size: 2rem; font-weight: 800; }
+  .stat-card .stat-change { font-size: 0.75rem; }
+  .stat-card .stat-icon { font-size: 1.5rem; }
+
+  /* ── GRID LAYOUTS ── */
+  .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+  @media (max-width: 900px) {
+    .grid-3, .grid-4 { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 600px) {
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    nav { padding: 0 1rem; }
+    .nav-links { display: none; }
+  }
+
+  /* ── CONTENT WRAPPER ── */
+  .content { max-width: 1200px; margin: 0 auto; padding: 84px 2rem 3rem; }
+  .content-wide { max-width: 1400px; margin: 0 auto; padding: 84px 2rem 3rem; }
+
+  /* ── SECTION HEADER ── */
+  .section-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  .section-title { font-size: 1.5rem; font-weight: 800; }
+  .section-sub { color: var(--text-muted); font-size: 0.875rem; margin-top: 0.2rem; }
+
+  /* ── DIVIDER ── */
+  .divider { height: 1px; background: var(--border); margin: 1.5rem 0; }
+
+  /* ── TABS ── */
+  .tabs { display: flex; gap: 0.25rem; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 0.25rem; margin-bottom: 1.5rem; }
+  .tab { flex: 1; padding: 0.5rem; border-radius: 8px; border: none; background: none; color: var(--text-muted); font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 500; cursor: pointer; transition: all 0.2s; text-align: center; }
+  .tab.active { background: var(--surface2); color: var(--text); }
+
+  /* ── PROJECT CARDS ── */
+  .project-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    transition: all 0.25s;
+  }
+  .project-card:hover { transform: translateY(-3px); border-color: rgba(59,130,246,0.3); box-shadow: 0 8px 30px rgba(59,130,246,0.1); }
+  .project-header {
+    padding: 1.25rem 1.25rem 0.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  .project-icon {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    background: rgba(59,130,246,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+  }
+  .project-body { padding: 0.5rem 1.25rem 1.25rem; }
+  .project-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.25rem; }
+  .project-meta { display: flex; gap: 1rem; margin: 0.75rem 0; font-size: 0.8rem; color: var(--text-muted); }
+  .project-tags { display: flex; gap: 0.4rem; flex-wrap: wrap; margin: 0.75rem 0; }
+  .project-footer {
+    padding: 1rem 1.25rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  /* ── STUDY GROUP CARDS ── */
+  .group-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.25rem;
+  }
+  .group-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+  .group-avatar {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    background: var(--grad2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    color: #fff;
+  }
+
+  /* ── RESOURCE CARDS ── */
+  .resource-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  .resource-icon {
+    width: 40px; height: 40px;
+    border-radius: 8px;
+    background: rgba(59,130,246,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+  }
+
+  /* ── CHATBOT ── */
+  #chatbot {
+    position: fixed;
+    bottom: 1.5rem; left: 1.5rem;
+    z-index: 1500;
+  }
+  .chat-toggle {
+    width: 54px; height: 54px;
+    background: var(--grad);
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    box-shadow: 0 4px 20px rgba(59,130,246,0.4);
+    transition: transform 0.2s;
+  }
+  .chat-toggle:hover { transform: scale(1.08); }
+  .chat-window {
+    position: absolute;
+    bottom: 64px; left: 0;
+    width: 320px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    display: none;
+  }
+  .chat-window.open { display: flex; flex-direction: column; animation: scaleIn 0.3s ease; }
+  @keyframes scaleIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+
+  /* ── TOAST ── */
+  #toast-container { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9998; display: flex; flex-direction: column; gap: 0.5rem; }
+  .toast {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 280px;
+    animation: slideIn 0.3s ease;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+  }
+  @keyframes slideIn { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
+</style>
+</head>
+<body>
+
+<!-- Background Orbs -->
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<!-- Toast Container -->
+<div id="toast-container"></div>
+
+<!-- Navigation -->
+<nav id="main-nav" style="display:none">
+  <div class="nav-logo" onclick="showPage('dashboard')">⟡ CollabSpace</div>
+  <div class="nav-links">
+    <a onclick="showPage('dashboard')" class="active">Dashboard</a>
+    <a onclick="showPage('projects-page')">Projects</a>
+    <a onclick="showPage('study-groups-page')">Study Groups</a>
+    <a onclick="showPage('resources-page')">Resources</a>
+    <a onclick="showPage('academics-page')">Academics</a>
+    <a onclick="showPage('leaderboard-page')">🏆 Leaderboard</a>
+    <a onclick="showPage('contact-page')">Contact</a>
+    <a onclick="showPage('help-page')">Help</a>
+    <a onclick="showPage('admin-page')">⚙️ Admin</a>
+    <a onclick="showPage('messages-page')">💬 Messages</a>
+  </div>
+  <div class="nav-actions">
+    <div style="position:relative;cursor:pointer" onclick="toggleNotifications()">
+      <div style="font-size:1.3rem">🔔</div>
+      <div id="notif-badge" style="display:none;position:absolute;top:-5px;right:-5px;background:var(--danger);color:#fff;border-radius:50%;width:18px;height:18px;font-size:0.65rem;display:flex;align-items:center;justify-content:center;font-weight:700">0</div>
+    </div>
+    <div id="notif-dropdown" style="display:none;position:absolute;top:60px;right:80px;width:320px;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:0 8px 30px rgba(0,0,0,0.4);z-index:2000;max-height:400px;overflow-y:auto">
+      <div style="padding:1rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        <strong>Notifications</strong>
+        <button onclick="markAllRead()" class="btn btn-ghost btn-sm">Mark all read</button>
+      </div>
+      <div id="notif-list" style="padding:0.5rem"></div>
+    </div>
+    <div class="avatar" style="cursor:pointer" onclick="showPage('profile-page')">AK</div>
+    <button class="btn btn-ghost btn-sm" onclick="toggleTheme()" id="theme-btn">☀️</button>
+    <button class="btn btn-ghost btn-sm" onclick="logout()">Logout</button>
+  </div>
+</nav>
+
+<!-- LANDING PAGE -->
+<div id="landing" class="page active">
+  <div class="hero" style="min-height:100vh; display:flex; align-items:center; justify-content:center; text-align:center; padding:6rem 2rem 4rem; position:relative; overflow:hidden;">
+    <div style="position:relative; z-index:1">
+      <div style="display:inline-flex; align-items:center; gap:0.5rem; background:rgba(59,130,246,0.1); border:1px solid rgba(59,130,246,0.2); border-radius:20px; padding:0.3rem 0.9rem; font-size:0.78rem; color:var(--accent); font-weight:600; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:1.5rem">
+        ✦ Student Collaboration Platform
+      </div>
+      <h1 style="font-size:clamp(2.5rem, 6vw, 5rem); font-weight:800; line-height:1.05; margin-bottom:1.25rem">
+        Where <span style="background:var(--grad); -webkit-background-clip:text; -webkit-text-fill-color:transparent">Students</span><br>
+        Build Together
+      </h1>
+      <p style="font-size:1.1rem; color:var(--text-muted); max-width:560px; margin:0 auto 2.5rem; line-height:1.7">
+        Collaborate on projects, form study groups, share resources, and excel academically with fellow students.
+      </p>
+      <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap">
+        <button class="btn btn-primary btn-lg" onclick="showPage('auth')">Start Collaborating →</button>
+        <button class="btn btn-secondary btn-lg" onclick="showPublicProjects()">Explore Projects</button>
+      </div>
+      <div style="display:flex; gap:0.75rem; justify-content:center; flex-wrap:wrap; margin-top:3rem">
+        <div style="display:flex; align-items:center; gap:0.5rem; background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:0.4rem 1rem; font-size:0.8rem; color:var(--text-muted)">
+          <span>👥</span> 2,500+ Students
+        </div>
+        <div style="display:flex; align-items:center; gap:0.5rem; background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:0.4rem 1rem; font-size:0.8rem; color:var(--text-muted)">
+          <span>📚</span> 180+ Study Groups
+        </div>
+        <div style="display:flex; align-items:center; gap:0.5rem; background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:0.4rem 1rem; font-size:0.8rem; color:var(--text-muted)">
+          <span>💻</span> 320+ Projects
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Features -->
+  <div style="padding:4rem 2rem; max-width:1200px; margin:0 auto">
+    <h2 style="text-align:center; font-size:2.25rem; margin-bottom:0.5rem">Everything You Need to Collaborate</h2>
+    <p style="text-align:center; color:var(--text-muted); margin-bottom:3rem">Powerful tools for student collaboration and academic success</p>
+    <div class="grid-3">
+      <div class="feature-card" style="background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:1.75rem">
+        <div style="width:48px; height:48px; border-radius:14px; background:rgba(59,130,246,0.15); display:flex; align-items:center; justify-content:center; font-size:1.25rem; margin-bottom:1rem">💻</div>
+        <h3 style="font-size:1rem; margin-bottom:0.5rem">Project Collaboration</h3>
+        <p style="font-size:0.85rem; color:var(--text-muted); line-height:1.6">Create and join projects, collaborate in real-time, and showcase your work to the community.</p>
+      </div>
+      <div class="feature-card" style="background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:1.75rem">
+        <div style="width:48px; height:48px; border-radius:14px; background:rgba(139,92,246,0.15); display:flex; align-items:center; justify-content:center; font-size:1.25rem; margin-bottom:1rem">📚</div>
+        <h3 style="font-size:1rem; margin-bottom:0.5rem">Study Groups</h3>
+        <p style="font-size:0.85rem; color:var(--text-muted); line-height:1.6">Form study groups for courses, share notes, schedule sessions, and learn together.</p>
+      </div>
+      <div class="feature-card" style="background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:1.75rem">
+        <div style="width:48px; height:48px; border-radius:14px; background:rgba(16,185,129,0.15); display:flex; align-items:center; justify-content:center; font-size:1.25rem; margin-bottom:1rem">📄</div>
+        <h3 style="font-size:1rem; margin-bottom:0.5rem">Resource Sharing</h3>
+        <p style="font-size:0.85rem; color:var(--text-muted); line-height:1.6">Upload and share study materials, notes, previous papers, and helpful resources.</p>
+      </div>
+      <div class="feature-card" style="background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:1.75rem">
+        <div style="width:48px; height:48px; border-radius:14px; background:rgba(245,158,11,0.15); display:flex; align-items:center; justify-content:center; font-size:1.25rem; margin-bottom:1rem">🎓</div>
+        <h3 style="font-size:1rem; margin-bottom:0.5rem">Peer Learning</h3>
+        <p style="font-size:0.85rem; color:var(--text-muted); line-height:1.6">Connect with students in your courses, ask questions, and get help from peers.</p>
+      </div>
+      <div class="feature-card" style="background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:1.75rem">
+        <div style="width:48px; height:48px; border-radius:14px; background:rgba(59,130,246,0.15); display:flex; align-items:center; justify-content:center; font-size:1.25rem; margin-bottom:1rem">🏆</div>
+        <h3 style="font-size:1rem; margin-bottom:0.5rem">Achievement System</h3>
+        <p style="font-size:0.85rem; color:var(--text-muted); line-height:1.6">Earn badges and recognition for your contributions, projects, and collaboration.</p>
+      </div>
+      <div class="feature-card" style="background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:1.75rem">
+        <div style="width:48px; height:48px; border-radius:14px; background:rgba(139,92,246,0.15); display:flex; align-items:center; justify-content:center; font-size:1.25rem; margin-bottom:1rem">🤖</div>
+        <h3 style="font-size:1rem; margin-bottom:0.5rem">AI Study Assistant</h3>
+        <p style="font-size:0.85rem; color:var(--text-muted); line-height:1.6">Get AI-powered recommendations for study groups and resources based on your courses.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div style="text-align:center; padding:3rem 2rem; border-top:1px solid var(--border)">
+    <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:1rem">Already a member?</p>
+    <button class="btn btn-primary" onclick="showPage('auth')">Sign In to CollabSpace</button>
+
+    <!-- About Section -->
+    <div style="padding:4rem 2rem;max-width:1200px;margin:0 auto;border-top:1px solid var(--border)">
+      <h2 style="text-align:center;font-size:2rem;margin-bottom:0.5rem">About CollabSpace</h2>
+      <p style="text-align:center;color:var(--text-muted);max-width:600px;margin:0 auto 3rem;line-height:1.7">CollabSpace is a student collaboration platform built by students, for students. Our mission is to help students connect, collaborate, and succeed together.</p>
+      <div class="grid-3">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1.5rem;text-align:center">
+          <div style="font-size:2rem;margin-bottom:1rem">🎯</div>
+          <h3 style="margin-bottom:0.5rem">Our Mission</h3>
+          <p style="color:var(--text-muted);font-size:0.85rem;line-height:1.6">Empower students to collaborate, share knowledge, and build amazing projects together.</p>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1.5rem;text-align:center">
+          <div style="font-size:2rem;margin-bottom:1rem">👥</div>
+          <h3 style="margin-bottom:0.5rem">Community</h3>
+          <p style="color:var(--text-muted);font-size:0.85rem;line-height:1.6">Join thousands of students from MMCOE and other colleges collaborating in real-time.</p>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1.5rem;text-align:center">
+          <div style="font-size:2rem;margin-bottom:1rem">🚀</div>
+          <h3 style="margin-bottom:0.5rem">Innovation</h3>
+          <p style="color:var(--text-muted);font-size:0.85rem;line-height:1.6">Built with modern technology to provide the best collaboration experience for students.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- FAQ Section -->
+    <div style="padding:4rem 2rem;max-width:800px;margin:0 auto;border-top:1px solid var(--border)">
+      <h2 style="text-align:center;font-size:2rem;margin-bottom:0.5rem">Frequently Asked Questions</h2>
+      <p style="text-align:center;color:var(--text-muted);margin-bottom:3rem">Everything you need to know about CollabSpace</p>
+      <div style="display:flex;flex-direction:column;gap:1rem">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.25rem;cursor:pointer" onclick="toggleFaq(this)">
+          <div style="display:flex;justify-content:space-between;align-items:center"><strong>Is CollabSpace free to use?</strong><span>▼</span></div>
+          <p class="faq-answer" style="display:none;color:var(--text-muted);margin-top:0.75rem;font-size:0.9rem;line-height:1.6">Yes! CollabSpace is completely free for all students. Just register with your college email and start collaborating!</p>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.25rem;cursor:pointer" onclick="toggleFaq(this)">
+          <div style="display:flex;justify-content:space-between;align-items:center"><strong>How do I join a project?</strong><span>▼</span></div>
+          <p class="faq-answer" style="display:none;color:var(--text-muted);margin-top:0.75rem;font-size:0.9rem;line-height:1.6">Go to the Projects page, find a project you like, and click the Join button. You will be added instantly!</p>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.25rem;cursor:pointer" onclick="toggleFaq(this)">
+          <div style="display:flex;justify-content:space-between;align-items:center"><strong>Can I create my own study group?</strong><span>▼</span></div>
+          <p class="faq-answer" style="display:none;color:var(--text-muted);margin-top:0.75rem;font-size:0.9rem;line-height:1.6">Absolutely! Go to Study Groups page and click Create Study Group. Set your course, description and invite members.</p>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.25rem;cursor:pointer" onclick="toggleFaq(this)">
+          <div style="display:flex;justify-content:space-between;align-items:center"><strong>How do contribution points work?</strong><span>▼</span></div>
+          <p class="faq-answer" style="display:none;color:var(--text-muted);margin-top:0.75rem;font-size:0.9rem;line-height:1.6">You earn points by creating projects (+50), joining groups (+10), uploading resources (+20), and commenting (+5). Higher points = higher leaderboard rank!</p>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.25rem;cursor:pointer" onclick="toggleFaq(this)">
+          <div style="display:flex;justify-content:space-between;align-items:center"><strong>Is my data secure?</strong><span>▼</span></div>
+          <p class="faq-answer" style="display:none;color:var(--text-muted);margin-top:0.75rem;font-size:0.9rem;line-height:1.6">Yes! We use JWT authentication, bcrypt password hashing, and rate limiting to keep your data safe.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contact and Help Section -->
+    <div style="padding:4rem 2rem;max-width:1200px;margin:0 auto;border-top:1px solid var(--border)">
+      <div class="grid-2">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:2rem">
+          <h2 style="font-size:1.5rem;margin-bottom:0.5rem">📬 Contact Us</h2>
+          <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:1.5rem">Have questions or feedback? We would love to hear from you!</p>
+          <div style="display:flex;flex-direction:column;gap:0.75rem">
+            <div style="display:flex;align-items:center;gap:0.75rem;color:var(--text-muted);font-size:0.9rem"><span>📧</span> atharvapardeshi2024.it@mmcoe.edu.in</div>
+            <div style="display:flex;align-items:center;gap:0.75rem;color:var(--text-muted);font-size:0.9rem"><span>🏫</span> MMCOE, Pune, Maharashtra</div>
+            <div style="display:flex;align-items:center;gap:0.75rem;color:var(--text-muted);font-size:0.9rem"><span>👨‍💻 Atharva Pardeshi - B24IT1056</div>
+            <div style="display:flex;align-items:center;gap:0.75rem;color:var(--text-muted);font-size:0.9rem"><span>🐙</span> github.com/atharvapardeshi2024it-lab</div>
+            <div style="display:flex;align-items:center;gap:0.75rem;color:var(--text-muted);font-size:0.9rem"><span>📱</span> +91 8080668276</div></div>
+          </div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:2rem">
+          <h2 style="font-size:1.5rem;margin-bottom:0.5rem">❓ Help Center</h2>
+          <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:1.5rem">Quick guides to get you started with CollabSpace</p>
+          <div style="display:flex;flex-direction:column;gap:0.75rem">
+            <div style="display:flex;align-items:center;gap:0.75rem;background:var(--surface2);border-radius:8px;padding:0.75rem;cursor:pointer" onclick="showPage('auth')">
+              <span>🚀</span><div><div style="font-weight:600;font-size:0.85rem">Getting Started</div><div style="font-size:0.75rem;color:var(--text-muted)">Register and set up your profile</div></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:0.75rem;background:var(--surface2);border-radius:8px;padding:0.75rem">
+              <span>💻</span><div><div style="font-weight:600;font-size:0.85rem">Create a Project</div><div style="font-size:0.75rem;color:var(--text-muted)">Start collaborating with teammates</div></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:0.75rem;background:var(--surface2);border-radius:8px;padding:0.75rem">
+              <span>📚</span><div><div style="font-weight:600;font-size:0.85rem">Join Study Groups</div><div style="font-size:0.75rem;color:var(--text-muted)">Find groups for your courses</div></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:0.75rem;background:var(--surface2);border-radius:8px;padding:0.75rem">
+              <span>🏆</span><div><div style="font-weight:600;font-size:0.85rem">Earn Points</div><div style="font-size:0.75rem;color:var(--text-muted)">Contribute and climb the leaderboard</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:0.5rem;margin-bottom:1rem">
+      <div id="landing-db-dot" style="width:8px;height:8px;border-radius:50%;background:#ef4444"></div>
+      <span id="landing-db-text" style="font-size:0.75rem;color:var(--text-muted)">Checking database...</span>
+    </div>
+    <p style="color:var(--text-muted); font-size:0.75rem; margin-top:2rem">© 2025 CollabSpace — Empowering Student Collaboration</p>
+  </div>
+</div>
+
+<!-- AUTH PAGE -->
+<div id="auth" class="page">
+  <div class="auth-container" style="min-height:100vh; display:flex; align-items:center; justify-content:center; padding:2rem; position:relative;">
+    <div style="position:absolute; inset:0; background:radial-gradient(ellipse 60% 60% at 50% 50%, rgba(59,130,246,0.08) 0%, transparent 70%); pointer-events:none"></div>
+    <div style="background:var(--surface); border:1px solid var(--border); border-radius:24px; padding:2.5rem; width:100%; max-width:440px; position:relative; z-index:1">
+      <div style="text-align:center; margin-bottom:2rem">
+        <h2 style="font-size:1.75rem; background:var(--grad); -webkit-background-clip:text; -webkit-text-fill-color:transparent">⟡ CollabSpace</h2>
+        <p style="color:var(--text-muted); font-size:0.875rem; margin-top:0.25rem">Connect · Collaborate · Succeed</p>
+      </div>
+
+      <div style="display:flex; background:var(--surface2); border-radius:10px; padding:0.25rem; margin-bottom:1.75rem">
+        <button class="auth-tab active" style="flex:1; padding:0.5rem; border-radius:7px; border:none; background:none; color:var(--text-muted); cursor:pointer" onclick="switchAuthTab('login', this)">Sign In</button>
+        <button class="auth-tab" style="flex:1; padding:0.5rem; border-radius:7px; border:none; background:none; color:var(--text-muted); cursor:pointer" onclick="switchAuthTab('register', this)">Register</button>
+      </div>
+
+      <!-- LOGIN -->
+      <div id="auth-login">
+        <div class="form-group">
+          <label>College Email</label>
+          <input type="email" id="login-email" placeholder="student@college.edu" value="student@collab.edu">
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="login-pass" placeholder="••••••••" value="password123">
+        </div>
+        <button class="btn btn-primary" style="width:100%; justify-content:center; padding:0.75rem; margin-bottom:1rem" onclick="doLogin()">Sign In →</button>
+        <p style="text-align:center; font-size:0.8rem; color:var(--text-muted)">
+          Don't have an account? <span style="color:var(--accent); cursor:pointer" onclick="switchAuthTab('register', document.querySelectorAll('.auth-tab')[1])">Register here</span>
+        </p>
+      </div>
+
+      <!-- REGISTER -->
+      <div id="auth-register" style="display:none">
+        <div class="grid-2" style="gap:0.75rem">
+          <div class="form-group" style="margin-bottom:0">
+            <label>First Name</label>
+            <input type="text" placeholder="John">
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label>Last Name</label>
+            <input type="text" placeholder="Doe">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>College Email</label>
+          <input type="email" placeholder="john.doe@college.edu">
+        </div>
+        <div class="form-group">
+          <label>Course/Department</label>
+          <select>
+            <option>Computer Science</option>
+            <option>Information Technology</option>
+            <option>Electronics Engineering</option>
+            <option>Mechanical Engineering</option>
+            <option>Civil Engineering</option>
+            <option>Business Administration</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Year</label>
+          <select>
+            <option>1st Year</option>
+            <option>2nd Year</option>
+            <option>3rd Year</option>
+            <option>4th Year</option>
+            <option>Master's</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" placeholder="Min. 8 characters">
+        </div>
+        <button class="btn btn-primary" style="width:100%; justify-content:center; padding:0.75rem" onclick="doRegister()">Create Account →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard" class="page">
+  <div style="padding:84px 2rem 3rem; max-width:1200px; margin:0 auto">
+    <div class="section-header">
+      <div>
+        <div class="section-title">Welcome back, John! 👋</div>
+        <div class="section-sub">Here's what's happening in your collaboration network</div>
+      </div>
+      <div style="display:flex; gap:0.5rem">
+        <button class="btn btn-primary btn-sm" onclick="showPage('projects-page')">+ New Project</button>
+        <button class="btn btn-secondary btn-sm" onclick="showPage('study-groups-page')">+ Study Group</button>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid-4" style="margin-bottom:1.5rem">
+      <div class="stat-card">
+        <div class="stat-icon">📚</div>
+        <div class="stat-value" style="color:var(--accent)">4</div>
+        <div class="stat-label">Active Study Groups</div>
+        <div class="stat-change" style="color:var(--success)">↑ 2 new this week</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">💻</div>
+        <div class="stat-value" style="color:var(--accent2)">6</div>
+        <div class="stat-label">Projects Joined</div>
+        <div class="stat-change" style="color:var(--success)">↑ 3 ongoing</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📄</div>
+        <div class="stat-value" style="color:var(--accent3)">24</div>
+        <div class="stat-label">Resources Shared</div>
+        <div class="stat-change" style="color:var(--success)">12 this month</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🏆</div>
+        <div class="stat-value" style="color:var(--accent4)">1,250</div>
+        <div class="stat-label">Contribution Points</div>
+        <div class="stat-change" style="color:var(--text-muted)">Level 4 Collaborator</div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <!-- Active Projects -->
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem">
+          <strong>🚀 Active Projects</strong>
+          <button class="btn btn-ghost btn-sm" onclick="showPage('projects-page')">View All →</button>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:1rem">
+          <div style="display:flex; gap:1rem; align-items:center">
+            <div style="width:40px; height:40px; background:rgba(59,130,246,0.15); border-radius:10px; display:flex; align-items:center; justify-content:center">🤖</div>
+            <div style="flex:1">
+              <div style="font-weight:600">AI Study Assistant</div>
+              <div style="font-size:0.75rem; color:var(--text-muted)">with Sarah, Mike, 3 others</div>
+            </div>
+            <span class="badge badge-green">In Progress</span>
+          </div>
+          <div style="display:flex; gap:1rem; align-items:center">
+            <div style="width:40px; height:40px; background:rgba(139,92,246,0.15); border-radius:10px; display:flex; align-items:center; justify-content:center">🌐</div>
+            <div style="flex:1">
+              <div style="font-weight:600">Web Dev Portfolio</div>
+              <div style="font-size:0.75rem; color:var(--text-muted)">with Alex, Priya</div>
+            </div>
+            <span class="badge badge-blue">Planning</span>
+          </div>
+          <div style="display:flex; gap:1rem; align-items:center">
+            <div style="width:40px; height:40px; background:rgba(16,185,129,0.15); border-radius:10px; display:flex; align-items:center; justify-content:center">📊</div>
+            <div style="flex:1">
+              <div style="font-weight:600">Data Science Project</div>
+              <div style="font-size:0.75rem; color:var(--text-muted)">with Rahul, Neha</div>
+            </div>
+            <span class="badge badge-purple">Review</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Upcoming Study Sessions -->
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem">
+          <strong>📚 Upcoming Study Sessions</strong>
+          <button class="btn btn-ghost btn-sm" onclick="showPage('study-groups-page')">Schedule →</button>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:1rem">
+          <div style="display:flex; gap:0.75rem; align-items:center">
+            <div style="background:rgba(59,130,246,0.15); border-radius:8px; padding:0.4rem 0.6rem; text-align:center">
+              <div style="font-size:0.65rem; color:var(--text-muted)">TODAY</div>
+              <div style="font-family:'Syne'; font-size:1rem; font-weight:700; color:var(--accent)">4PM</div>
+            </div>
+            <div>
+              <div style="font-weight:600">Database Systems</div>
+              <div style="font-size:0.75rem; color:var(--text-muted)">8 members · Online</div>
+            </div>
+          </div>
+          <div style="display:flex; gap:0.75rem; align-items:center">
+            <div style="background:rgba(139,92,246,0.15); border-radius:8px; padding:0.4rem 0.6rem; text-align:center">
+              <div style="font-size:0.65rem; color:var(--text-muted)">TOMORROW</div>
+              <div style="font-family:'Syne'; font-size:1rem; font-weight:700; color:var(--accent2)">11AM</div>
+            </div>
+            <div>
+              <div style="font-weight:600">Algorithms Group</div>
+              <div style="font-size:0.75rem; color:var(--text-muted)">5 members · Library</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Resources -->
+    <div class="card" style="margin-top:1.5rem">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem">
+        <strong>📄 Recently Shared Resources</strong>
+        <button class="btn btn-ghost btn-sm" onclick="showPage('resources-page')">Browse All →</button>
+      </div>
+      <div class="grid-3">
+        <div class="resource-card">
+          <div class="resource-icon">📘</div>
+          <div>
+            <div style="font-weight:600; font-size:0.9rem">DBMS Notes</div>
+            <div style="font-size:0.7rem; color:var(--text-muted)">by Sarah · 2h ago</div>
+          </div>
+        </div>
+        <div class="resource-card">
+          <div class="resource-icon">📺</div>
+          <div>
+            <div style="font-weight:600; font-size:0.9rem">Python Tutorial</div>
+            <div style="font-size:0.7rem; color:var(--text-muted)">by Mike · 5h ago</div>
+          </div>
+        </div>
+        <div class="resource-card">
+          <div class="resource-icon">📄</div>
+          <div>
+            <div style="font-weight:600; font-size:0.9rem">Previous Papers</div>
+            <div style="font-size:0.7rem; color:var(--text-muted)">by Priya · 1d ago</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PROJECTS PAGE -->
+<div id="projects-page" class="page">
+  <div class="content">
+    <div class="section-header">
+      <div>
+        <div class="section-title">Student Projects</div>
+        <div class="section-sub">Collaborate on exciting projects with peers</div>
+      </div>
+      <button class="btn btn-primary" onclick="openModal('create-project-modal')">+ Start New Project</button>
+    </div>
+
+    <div class="tabs" style="max-width:400px">
+      <button class="tab active" onclick="filterProjects('all', this)">All Projects</button>
+      <button class="tab" onclick="filterProjects('Tech & IT', this)">Tech & IT</button>
+      <button class="tab" onclick="filterProjects('Science', this)">Science</button>
+      <button class="tab" onclick="filterProjects('Business', this)">Business</button>
+      <button class="tab" onclick="filterProjects('Design', this)">Design</button>
+    </div>
+
+    <div class="grid-3">
+      <div class="project-card">
+        <div class="project-header">
+          <div class="project-icon">🤖</div>
+          <span class="badge badge-blue">AI/ML</span>
+        </div>
+        <div class="project-body">
+          <div class="project-title">AI Study Assistant</div>
+          <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.5rem">Building an AI-powered study buddy for students</div>
+          <div class="project-meta">
+            <span>👥 5 members</span>
+            <span>📅 Started Mar 2025</span>
+          </div>
+          <div class="project-tags">
+            <span class="badge badge-blue">Python</span>
+            <span class="badge badge-purple">TensorFlow</span>
+            <span class="badge badge-green">NLP</span>
+          </div>
+        </div>
+        <div class="project-footer">
+          <div class="avatar-group">
+            <div class="avatar" style="width:28px; height:28px; font-size:0.6rem">JD</div>
+            <div class="avatar" style="width:28px; height:28px; font-size:0.6rem">SM</div>
+            <div class="avatar" style="width:28px; height:28px; font-size:0.6rem">MK</div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="toast('✅','Joined project!')">Join</button>
+        </div>
+      </div>
+
+      <div class="project-card">
+        <div class="project-header">
+          <div class="project-icon">🌐</div>
+          <span class="badge badge-purple">Web Dev</span>
+        </div>
+        <div class="project-body">
+          <div class="project-title">Student Collaboration Hub</div>
+          <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.5rem">Building the ultimate platform for student collaboration</div>
+          <div class="project-meta">
+            <span>👥 8 members</span>
+            <span>📅 Started Feb 2025</span>
+          </div>
+          <div class="project-tags">
+            <span class="badge badge-blue">React</span>
+            <span class="badge badge-purple">Node.js</span>
+            <span class="badge badge-green">MongoDB</span>
+          </div>
+        </div>
+        <div class="project-footer">
+          <div class="avatar-group">
+            <div class="avatar" style="width:28px; height:28px; font-size:0.6rem">AK</div>
+            <div class="avatar" style="width:28px; height:28px; font-size:0.6rem">PS</div>
+            <div class="avatar" style="width:28px; height:28px; font-size:0.6rem">RV</div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="toast('✅','Joined project!')">Join</button>
+        </div>
+      </div>
+
+      <div class="project-card">
+        <div class="project-header">
+          <div class="project-icon">🔬</div>
+          <span class="badge badge-green">Research</span>
+        </div>
+        <div class="project-body">
+          <div class="project-title">Renewable Energy Analysis</div>
+          <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.5rem">Analyzing solar panel efficiency data</div>
+          <div class="project-meta">
+            <span>👥 4 members</span>
+            <span>📅 Started Jan 2025</span>
+          </div>
+          <div class="project-tags">
+            <span class="badge badge-blue">Python</span>
+            <span class="badge badge-purple">Data Analysis</span>
+            <span class="badge badge-green">Research</span>
+          </div>
+        </div>
+        <div class="project-footer">
+          <div class="avatar-group">
+            <div class="avatar" style="width:28px; height:28px; font-size:0.6rem">SN</div>
+            <div class="avatar" style="width:28px; height:28px; font-size:0.6rem">AP</div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="toast('✅','Joined project!')">Join</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STUDY GROUPS PAGE -->
+<div id="study-groups-page" class="page">
+  <div class="content">
+    <div class="section-header">
+      <div>
+        <div class="section-title">Study Groups</div>
+        <div class="section-sub">Learn together, grow together</div>
+      </div>
+      <button class="btn btn-primary" onclick="openModal('create-group-modal')">+ Create Study Group</button>
+    </div>
+
+    <div class="grid-3">
+      <div class="group-card">
+        <div class="group-header">
+          <div class="group-avatar">📊</div>
+          <div>
+            <div style="font-weight:700">Database Systems</div>
+            <div style="font-size:0.75rem; color:var(--text-muted)">CS 301 · 12 members</div>
+          </div>
+        </div>
+        <div style="display:flex; gap:0.4rem; flex-wrap:wrap; margin-bottom:1rem">
+          <span class="badge badge-blue">SQL</span>
+          <span class="badge badge-purple">MongoDB</span>
+          <span class="badge badge-green">Design</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center">
+          <div style="font-size:0.8rem; color:var(--text-muted)">Next session: Today 4PM</div>
+          <button class="btn btn-primary btn-sm" onclick="toast('📚','Joined study group!')">Join</button>
+        </div>
+      </div>
+
+      <div class="group-card">
+        <div class="group-header">
+          <div class="group-avatar">🤖</div>
+          <div>
+            <div style="font-weight:700">Machine Learning</div>
+            <div style="font-size:0.75rem; color:var(--text-muted)">CS 402 · 8 members</div>
+          </div>
+        </div>
+        <div style="display:flex; gap:0.4rem; flex-wrap:wrap; margin-bottom:1rem">
+          <span class="badge badge-blue">Python</span>
+          <span class="badge badge-purple">Scikit-learn</span>
+          <span class="badge badge-green">TensorFlow</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center">
+          <div style="font-size:0.8rem; color:var(--text-muted)">Next session: Tomorrow 2PM</div>
+          <button class="btn btn-primary btn-sm" onclick="toast('📚','Joined study group!')">Join</button>
+        </div>
+      </div>
+
+      <div class="group-card">
+        <div class="group-header">
+          <div class="group-avatar">🌐</div>
+          <div>
+            <div style="font-weight:700">Web Development</div>
+            <div style="font-size:0.75rem; color:var(--text-muted)">CS 305 · 15 members</div>
+          </div>
+        </div>
+        <div style="display:flex; gap:0.4rem; flex-wrap:wrap; margin-bottom:1rem">
+          <span class="badge badge-blue">HTML/CSS</span>
+          <span class="badge badge-purple">JavaScript</span>
+          <span class="badge badge-green">React</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center">
+          <div style="font-size:0.8rem; color:var(--text-muted)">Next session: Wed 3PM</div>
+          <button class="btn btn-primary btn-sm" onclick="toast('📚','Joined study group!')">Join</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- RESOURCES PAGE -->
+<div id="resources-page" class="page">
+  <div class="content">
+    <div class="section-header">
+      <div>
+        <div class="section-title">Study Resources</div>
+        <div class="section-sub">Share and discover learning materials</div>
+      </div>
+      <button class="btn btn-primary" onclick="openModal('upload-resource-modal')">+ Upload Resource</button>
+    </div>
+
+    <div class="grid-3">
+      <div class="resource-card">
+        <div class="resource-icon">📘</div>
+        <div style="flex:1">
+          <div style="font-weight:600">Database Management Notes</div>
+          <div style="font-size:0.75rem; color:var(--text-muted)">by Sarah · 120 downloads</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="toast('📥','Downloading...')">↓</button>
+      </div>
+      <div class="resource-card">
+        <div class="resource-icon">📺</div>
+        <div style="flex:1">
+          <div style="font-weight:600">Python Tutorial Series</div>
+          <div style="font-size:0.75rem; color:var(--text-muted)">by Mike · 89 views</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="toast('🔗','Link copied!')">🔗</button>
+      </div>
+      <div class="resource-card">
+        <div class="resource-icon">📄</div>
+        <div style="flex:1">
+          <div style="font-weight:600">Previous Year Papers</div>
+          <div style="font-size:0.75rem; color:var(--text-muted)">by Priya · 245 downloads</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="toast('📥','Downloading...')">↓</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ACADEMICS PAGE -->
+<div id="academics-page" class="page">
+  <div class="content">
+    <div class="section-header">
+      <div>
+        <div class="section-title">Academic Collaboration</div>
+        <div class="section-sub">Connect with peers in your courses</div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <strong style="display:block; margin-bottom:1rem">📚 Your Courses</strong>
+        <div style="display:flex; flex-direction:column; gap:0.75rem">
+          <div style="display:flex; justify-content:space-between; align-items:center">
+            <div>
+              <div style="font-weight:600">CS301 - Database Systems</div>
+              <div style="font-size:0.75rem; color:var(--text-muted)">Prof. Sharma · 45 students</div>
+            </div>
+            <span class="badge badge-blue">Active</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center">
+            <div>
+              <div style="font-weight:600">CS402 - Machine Learning</div>
+              <div style="font-size:0.75rem; color:var(--text-muted)">Prof. Patel · 32 students</div>
+            </div>
+            <span class="badge badge-blue">Active</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <strong style="display:block; margin-bottom:1rem">👥 Course Peers</strong>
+        <div style="display:flex; flex-direction:column; gap:0.75rem">
+          <div style="display:flex; align-items:center; gap:0.75rem">
+            <div class="avatar" style="width:32px; height:32px">SP</div>
+            <div>
+              <div style="font-weight:600">Sarah Patel</div>
+              <div style="font-size:0.7rem; color:var(--text-muted)">Same courses: DBMS, ML</div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:0.75rem">
+            <div class="avatar" style="width:32px; height:32px">MK</div>
+            <div>
+              <div style="font-weight:600">Mike Kumar</div>
+              <div style="font-size:0.7rem; color:var(--text-muted)">Same courses: DBMS</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PROFILE PAGE -->
+<div id="leaderboard-page" class="page">
+  <div class="content">
+    <div class="section-header">
+      <div>
+        <div class="section-title">🏆 Leaderboard</div>
+        <div class="section-sub">Top contributors in CollabSpace</div>
+      </div>
+    </div>
+    <div id="leaderboard-list"></div>
+  </div>
+</div>
+<div id="profile-page" class="page">
+  <div class="content" style="max-width:800px">
+    <div class="section-header">
+      <div class="section-title">My Profile</div>
+      <button class="btn btn-primary btn-sm" onclick="toast('💾','Profile saved!')">Save Changes</button>
+    </div>
+    <div class="card" style="margin-bottom:1rem">
+      <div style="display:flex; align-items:center; gap:1.5rem; margin-bottom:1.5rem; flex-wrap:wrap">
+        <div class="avatar avatar-lg" id="profile-avatar" style="cursor:pointer;position:relative" onclick="document.getElementById('avatar-input').click()">JD</div><input type="file" id="avatar-input" style="display:none" accept=".jpg,.jpeg,.png,.webp" onchange="uploadAvatar()">
+        <div>
+          <h2 style="font-size:1.25rem">John Doe</h2>
+          <div style="color:var(--text-muted); font-size:0.875rem">john.doe@college.edu</div>
+          <div style="color:var(--text-muted); font-size:0.875rem">Computer Science · 3rd Year</div>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="form-group"><label>Bio</label><textarea>Passionate about coding and collaboration. Love working on team projects!</textarea></div>
+        <div class="form-group"><label>Skills</label><input type="text" value="Python, JavaScript, SQL, React"></div>
+      </div>
+      <div style="display:flex; gap:0.5rem; margin-top:0.5rem">
+        <span class="badge badge-blue">Python</span>
+        <span class="badge badge-purple">JavaScript</span>
+        <span class="badge badge-green">SQL</span>
+        <span class="badge badge-orange">React</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODALS -->
+<div id="create-project-modal" class="modal-overlay" style="display:none">
+  <div class="modal" style="background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:2rem; max-width:500px">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem">
+      <h3 style="font-size:1.25rem">Start New Project</h3>
+      <button class="modal-close" style="background:none; border:none; color:var(--text-muted); cursor:pointer" onclick="closeModal('create-project-modal')">✕</button>
+    </div>
+    <div class="form-group"><label>Project Title</label><input placeholder="e.g. AI Study Assistant"></div>
+    <div class="form-group"><label>Description</label><textarea placeholder="What's your project about?"></textarea></div>
+    <div class="form-group"><label>Category</label>
+      <select><option>Tech & IT</option><option>Science</option><option>Business</option><option>Design</option></select>
+    </div>
+    <div class="form-group"><label>Skills Needed</label><input placeholder="e.g. Python, React, ML"></div>
+    <div style="display:flex; gap:0.75rem; margin-top:1rem">
+      <button class="btn btn-primary" onclick="createNewProject()">Create Project</button>
+      <button class="btn btn-ghost" onclick="closeModal('create-project-modal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div id="create-group-modal" class="modal-overlay" style="display:none">
+  <div class="modal" style="background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:2rem; max-width:500px">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem">
+      <h3 style="font-size:1.25rem">Create Study Group</h3>
+      <button class="modal-close" style="background:none; border:none; color:var(--text-muted); cursor:pointer" onclick="closeModal('create-group-modal')">✕</button>
+    </div>
+    <div class="form-group"><label>Course Name</label><input placeholder="e.g. Database Systems CS301"></div>
+    <div class="form-group"><label>Description</label><textarea placeholder="Study goals, topics, etc."></textarea></div>
+    <div class="grid-2" style="gap:0.75rem">
+      <div class="form-group"><label>Max Members</label><input type="number" value="8"></div>
+      <div class="form-group"><label>Meeting Frequency</label>
+        <select><option>Weekly</option><option>Bi-weekly</option><option>As needed</option></select>
+      </div>
+    </div>
+    <button class="btn btn-primary" style="width:100%" onclick="createNewGroup()">Create Group</button>
+  </div>
+</div>
+
+<div id="upload-resource-modal" class="modal-overlay" style="display:none">
+  <div class="modal" style="background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:2rem; max-width:500px">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem">
+      <h3 style="font-size:1.25rem">Upload Resource</h3>
+      <button class="modal-close" style="background:none; border:none; color:var(--text-muted); cursor:pointer" onclick="closeModal('upload-resource-modal')">✕</button>
+    </div>
+    <div class="form-group"><label>Title</label><input placeholder="e.g. DBMS Notes - Unit 1"></div>
+    <div class="form-group"><label>Type</label>
+      <select><option>Notes</option><option>Video</option><option>Previous Paper</option><option>Assignment</option></select>
+    </div>
+    <div class="form-group"><label>Course</label><input placeholder="e.g. CS301"></div>
+    <div style="background:var(--surface2); border:2px dashed var(--border); border-radius:10px; padding:2rem; text-align:center; margin:1rem 0; cursor:pointer" onclick="document.getElementById('file-input').click()">
+      <div style="font-size:2rem; margin-bottom:0.5rem">📁</div>
+      <div style="font-size:0.8rem; color:var(--text-muted)">Click to upload or drag and drop</div><input type="file" id="file-input" style="display:none" accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.zip">
+    </div>
+    <button class="btn btn-primary" style="width:100%" onclick="uploadResource()">Upload</button>
+  </div>
+</div>
+
+<!-- PROJECT DETAILS MODAL -->
+<div id="project-details-modal" class="modal-overlay" style="display:none">
+  <div class="modal" style="background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:2rem;max-width:560px;width:100%;max-height:80vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+      <h3>Project Details</h3>
+      <button style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1.2rem" onclick="closeModal('project-details-modal')">✕</button>
+    </div>
+    <div id="project-details-content"></div>
+  </div>
+</div>
+
+<!-- CHAT PANEL -->
+<div id="chat-panel" style="display:none; position:fixed; bottom:1.5rem; right:1.5rem; width:320px; height:450px; background:var(--surface); border:1px solid var(--border); border-radius:20px; flex-direction:column; z-index:1500; box-shadow:0 20px 60px rgba(0,0,0,0.5)">
+  <div style="padding:1rem; background:var(--surface2); border-bottom:1px solid var(--border); border-radius:20px 20px 0 0; display:flex; justify-content:space-between; align-items:center">
+    <div>
+      <strong id="chat-room-name" style="font-size:0.9rem">Chat</strong>
+      <div id="online-count" style="font-size:0.7rem; color:var(--success)">0 online</div>
+    </div>
+    <button onclick="document.getElementById('chat-panel').style.display='none'" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:1.2rem">✕</button>
+  </div>
+  <div id="chat-panel-messages" style="flex:1; overflow-y:auto; padding:1rem"></div>
+  <div style="padding:0.75rem; border-top:1px solid var(--border); display:flex; gap:0.5rem">
+    <input id="chat-msg-input" placeholder="Type a message..." style="flex:1; background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:0.5rem 0.75rem; color:var(--text); font-size:0.85rem; outline:none" onkeydown="if(event.key==='Enter')sendChatMessage()">
+    <button onclick="sendChatMessage()" style="background:var(--grad); border:none; border-radius:10px; width:36px; height:36px; cursor:pointer">➤</button>
+  </div>
+</div>
+
+<!-- CHATBOT -->
+<div id="chatbot">
+  <div class="chat-window" id="chat-window">
+    <div class="chat-header" style="padding:1rem; background:var(--surface2); border-bottom:1px solid var(--border); display:flex; align-items:center; gap:0.75rem">
+      <div class="avatar" style="width:32px; height:32px; font-size:0.7rem; background:var(--grad2)">AI</div>
+      <div>
+        <strong style="font-family:'Syne',sans-serif; font-size:0.9rem">StudyBot</strong>
+        <div style="font-size:0.7rem; color:var(--success)">● Online · AI Assistant</div>
+      </div>
+    </div>
+    <div class="chat-messages" id="chat-messages" style="height:250px; overflow-y:auto; padding:1rem; display:flex; flex-direction:column; gap:0.75rem">
+      <div class="chat-msg bot" style="max-width:80%; padding:0.5rem 0.8rem; border-radius:12px; font-size:0.82rem; background:var(--surface2); align-self:flex-start">
+        👋 Hi! I'm StudyBot. Ask me about study groups, projects, resources, or collaboration!
+      </div>
+    </div>
+    <div class="chat-input-row" style="padding:0.75rem; border-top:1px solid var(--border); display:flex; gap:0.5rem">
+      <input class="chat-input" id="chat-input" placeholder="Ask anything..." style="flex:1; background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:0.5rem 0.75rem; color:var(--text); font-size:0.82rem; outline:none" onkeydown="if(event.key==='Enter')sendChat()">
+      <button class="chat-send" style="background:var(--grad); border:none; border-radius:10px; width:36px; height:36px; cursor:pointer" onclick="sendChat()">➤</button>
+    </div>
+  </div>
+  <button class="chat-toggle" onclick="toggleChat()">🤖</button>
+</div>
+
+<script>
+  let currentUser = null;
+
+  // Page routing
+  function showPage(id) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    const page = document.getElementById(id);
+    if (page) page.classList.add('active');
+    window.scrollTo(0, 0);
+    document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
+    const activeLink = Array.from(document.querySelectorAll('.nav-links a')).find(a => a.getAttribute('onclick')?.includes(id));
+    if (activeLink) activeLink.classList.add('active');
+    if (id === 'projects-page')     loadProjects();
+    if (id === 'study-groups-page') loadStudyGroups();
+    if (id === 'resources-page')    loadResources();
+    if (id === 'academics-page')    loadAcademics();
+    if (id === 'leaderboard-page') { loadLeaderboard(); setInterval(loadLeaderboard, 300000); }
+    if (id === 'dashboard')         loadDashboard();
+  }
+
+  // Auth functions
+  function switchAuthTab(tab, el) {
+    document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('auth-login').style.display = tab === 'login' ? 'block' : 'none';
+    document.getElementById('auth-register').style.display = tab === 'register' ? 'block' : 'none';
+  }
+
+  function doLogin() {
+    const email = document.getElementById('login-email').value;
+    if (!email) { toast('⚠️', 'Please enter your email'); return; }
+    currentUser = { name: 'John', email };
+    document.getElementById('main-nav').style.display = 'flex';
+    toast('✅', 'Welcome back, John!');
+    showPage('dashboard');
+  }
+
+  function doRegister() {
+    toast('🎉', 'Registration successful! Please sign in.');
+    setTimeout(() => { switchAuthTab('login', document.querySelector('.auth-tab')); }, 1500);
+  }
+
+  function logout() {
+    currentUser = null;
+    document.getElementById('main-nav').style.display = 'none';
+    toast('👋', 'You have been logged out.');
+    showPage('landing');
+  }
+
+  // Modal functions
+  function openModal(id) {
+    const modal = document.getElementById(id);
+    if (modal) modal.style.display = 'flex';
+  }
+
+  function closeModal(id) {
+    const modal = document.getElementById(id);
+    if (modal) modal.style.display = 'none';
+  }
+
+  // Toast notification
+  function toast(icon, msg) {
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.innerHTML = `<span class="toast-icon">${icon}</span><span class="toast-msg">${msg}</span>`;
+    document.getElementById('toast-container').appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+  }
+
+  // Chatbot
+  let chatOpen = false;
+  function toggleChat() {
+  if (!currentUsername) currentUsername = "Student";
+  chatOpen = !chatOpen;
+  document.getElementById('chat-window').classList.toggle('open', chatOpen);
+  if (chatOpen && !socket) initChat();
+  if (chatOpen && !currentRoom) {
+    currentRoom = 'studybot-general';
+    if (currentUsername) {
+      socket.emit('join_room', { room: currentRoom, username: currentUsername });
+    }
+  }
+}
+
+  function sendChat() {
+    const input = document.getElementById("chat-input");
+    const msg = input.value.trim();
+    if (!msg) return;
+    addChatMsg(msg, "user");
+    input.value = "";
+    if (!socket) initChat();
+    if (!currentRoom) {
+      currentRoom = "studybot-general";
+      socket.emit("join_room", { room: currentRoom, username: currentUsername || "Student" });
+    }
+    socket.emit("send_message", { room: currentRoom, username: currentUsername || "Student", message: msg });
+  }
+  function addChatMsg(text, type) {
+    const msgs = document.getElementById('chat-messages');
+    const el = document.createElement('div');
+    el.className = `chat-msg ${type}`;
+    el.style.maxWidth = '80%';
+    el.style.padding = '0.5rem 0.8rem';
+    el.style.borderRadius = '12px';
+    el.style.fontSize = '0.82rem';
+    el.style.background = type === 'bot' ? 'var(--surface2)' : 'var(--grad)';
+    el.style.color = type === 'bot' ? 'var(--text)' : '#fff';
+    el.style.alignSelf = type === 'bot' ? 'flex-start' : 'flex-end';
+    el.textContent = text;
+    msgs.appendChild(el);
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  // Close modals on overlay click
+  document.querySelectorAll('.modal-overlay').forEach(o => {
+    o.addEventListener('click', function(e) {
+      if (e.target === this) this.style.display = 'none';
+    });
+  });
+</script>
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script src="api.js"></script>
+</body>
+</html>
+<div id="contact-page" class="page">
+  <div class="content" style="max-width:800px">
+    <div class="section-header"><div class="section-title">📬 Contact Us</div></div>
+    <div class="grid-2">
+      <div class="card">
+        <h3 style="margin-bottom:1rem">Get in Touch</h3>
+        <div style="display:flex;flex-direction:column;gap:1rem">
+          <div style="display:flex;align-items:center;gap:0.75rem"><span style="font-size:1.5rem">📧</span><div><div style="font-weight:600">Email</div><div style="color:var(--text-muted);font-size:0.85rem">atharvapardeshi2024.it@mmcoe.edu.in</div></div></div>
+          <div style="display:flex;align-items:center;gap:0.75rem"><span style="font-size:1.5rem">📱</span><div><div style="font-weight:600">Phone</div><div style="color:var(--text-muted);font-size:0.85rem">+91 8080668276</div></div></div>
+          <div style="display:flex;align-items:center;gap:0.75rem"><span style="font-size:1.5rem">🏫</span><div><div style="font-weight:600">College</div><div style="color:var(--text-muted);font-size:0.85rem">MMCOE, Pune, Maharashtra</div></div></div>
+          <div style="display:flex;align-items:center;gap:0.75rem"><span style="font-size:1.5rem">👨‍💻</span><div><div style="font-weight:600">Developer</div><div style="color:var(--text-muted);font-size:0.85rem">Atharva Pardeshi - B24IT1056</div></div></div>
+          <div style="display:flex;align-items:center;gap:0.75rem"><span style="font-size:1.5rem">🐙</span><div><div style="font-weight:600">GitHub</div><div style="color:var(--text-muted);font-size:0.85rem">github.com/atharvapardeshi2024it-lab</div></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:1rem">Send a Message</h3>
+        <div class="form-group"><label>Your Name</label><input placeholder="John Doe"></div>
+        <div class="form-group"><label>Email</label><input type="email" placeholder="john@college.edu"></div>
+        <div class="form-group"><label>Message</label><textarea placeholder="Your message here..."></textarea></div>
+        <button class="btn btn-primary" style="width:100%" onclick="sendContactMessage()">Send Message</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="help-page" class="page">
+  <div class="content" style="max-width:800px">
+    <div class="section-header"><div class="section-title">❓ Help Center</div></div>
+    <div style="display:flex;flex-direction:column;gap:1rem">
+      <div class="card">
+        <h3 style="margin-bottom:1rem">🚀 Getting Started</h3>
+        <p style="color:var(--text-muted);line-height:1.7">1. Register with your college email<br>2. Complete your profile<br>3. Browse projects and study groups<br>4. Join or create your own!</p>
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:1rem">💻 Projects</h3>
+        <p style="color:var(--text-muted);line-height:1.7">Create projects, add tasks, chat with team members, and track progress. Earn 50 points for creating and 10 for joining!</p>
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:1rem">📚 Study Groups</h3>
+        <p style="color:var(--text-muted);line-height:1.7">Join study groups for your courses, chat with members, and share resources. Perfect for exam preparation!</p>
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:1rem">🏆 Points System</h3>
+        <p style="color:var(--text-muted);line-height:1.7">Create project: +50 pts | Join project: +10 pts | Create group: +30 pts | Upload resource: +20 pts | Comment: +5 pts</p>
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:1rem">💬 Chat</h3>
+        <p style="color:var(--text-muted);line-height:1.7">Use the StudyBot for quick help, or join project/group chat rooms for real-time collaboration with teammates!</p>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="admin-page" class="page">
+  <div class="content" style="max-width:800px">
+    <div class="section-header">
+      <div class="section-title">⚙️ Admin Panel</div>
+      <button class="btn btn-primary btn-sm" onclick="loadAdminMessages()">🔄 Refresh</button>
+    </div>
+    <div class="card" style="margin-bottom:1.5rem">
+      <strong style="display:block;margin-bottom:1rem">📬 Contact Messages</strong>
+      <div id="admin-messages"><div style="color:var(--text-muted)">Loading...</div></div>
+    </div>
+  </div>
+</div>
+<div id="messages-page" class="page">
+  <div class="content">
+    <div class="section-header">
+      <div class="section-title">💬 Direct Messages</div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <strong style="display:block;margin-bottom:1rem">👥 Students</strong>
+        <div id="users-list" style="min-height:200px"></div>
+      </div>
+      <div class="card" style="display:flex;flex-direction:column">
+        <div id="msg-header" style="margin-bottom:1rem">
+          <strong>Select a student to message</strong>
+        </div>
+        <div id="msg-messages" style="flex:1;height:300px;overflow-y:auto;margin-bottom:1rem;display:flex;flex-direction:column;gap:0.5rem"></div>
+        <div style="display:flex;gap:0.5rem" id="msg-input-row" style="display:none">
+          <input id="msg-input" placeholder="Type a message..." style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.75rem;color:var(--text);font-size:0.85rem;outline:none" onkeydown="if(event.key==='Enter')sendDirectMessage()">
+          <button class="btn btn-primary btn-sm" onclick="sendDirectMessage()">Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
