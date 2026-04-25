@@ -1546,7 +1546,7 @@ async function uploadResource() {
 
   try {
     const token = getToken();
-    const res   = await fetch('http://localhost:5000/api/resources', {
+    const res   = await fetch('${API_URL}/resources', {
       method:  'POST',
       headers: { Authorization: `Bearer ${token}` },
       body:    formData,
@@ -1957,7 +1957,7 @@ async function uploadAvatar() {
 
   try {
     const token = getToken();
-    const res = await fetch('http://localhost:5000/api/resources/avatar', {
+    const res = await fetch('${API_URL}/resources/avatar', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
       body: formData,
@@ -2112,7 +2112,7 @@ async function checkDbStatus() {
   const landingDot  = document.getElementById("landing-db-dot");
   const landingText = document.getElementById("landing-db-text");
   try {
-    const res  = await fetch('http://localhost:5000/api/db-status');
+    const res  = await fetch('${API_URL}/db-status');
     const data = await res.json();
     const dot  = document.getElementById('db-status-dot');
     const text = document.getElementById('db-status-text');
@@ -2153,11 +2153,11 @@ async function sendContactMessage() {
   if (!name || !email || !message) { toast('⚠️', 'Please fill all fields'); return; }
 
   try {
-    const res  = await fetch('http://localhost:5000/api/contact', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ name, email, message }),
-    });
+    const res = await fetch(`${API_URL}/contact`, {
+    method: 'POST', // <--- ADD THIS LINE
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, email, message }),
+});
     const data = await res.json();
     if (data.success) {
       toast('📬', 'Message sent successfully!');
@@ -2172,7 +2172,7 @@ async function sendContactMessage() {
 
 async function loadAdminMessages() {
   try {
-    const res  = await fetch('http://localhost:5000/api/contact');
+    const res  = await fetch('${API_URL}/contact');
     const data = await res.json();
     const container = document.getElementById('admin-messages');
     if (!container) return;
@@ -2200,7 +2200,7 @@ async function loadAdminMessages() {
 
 async function showPublicProjects() {
   try {
-    const data = await fetch('http://localhost:5000/api/projects').then(r => r.json());
+    const data = await fetch('${API_URL}/projects').then(r => r.json());
     
     // Create a simple modal to show projects
     const existing = document.getElementById('public-projects-modal');
