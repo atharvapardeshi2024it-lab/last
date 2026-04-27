@@ -1,7 +1,8 @@
 // api.js — Drop this in the same folder as your HTML
 // Replace your existing <script> functions with these
 
-const API = 'https://collabspacesi156-production.up.railway.app/api';
+// Change this line to your Render URL:
+const API_URL = 'https://collabspace-si156.onrender.com/api';
 
 // ── Token helpers ──────────────────────────────────────────
 const getToken  = () => localStorage.getItem('cs_token');
