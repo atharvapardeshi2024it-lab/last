@@ -1,7 +1,7 @@
 // api.js — Drop this in the same folder as your HTML
 // Replace your existing <script> functions with these
 
-const API_URL = 'https://collabspacesi156-production.up.railway.app/api';
+const API = 'https://collabspacesi156-production.up.railway.app/api';
 
 // ── Token helpers ──────────────────────────────────────────
 const getToken  = () => localStorage.getItem('cs_token');
@@ -37,7 +37,7 @@ async function doLogin() {
     window._currentUser = data.user;
     if (data.user.avatar_url) {
       document.querySelectorAll('.avatar').forEach(el => {
-        el.style.backgroundImage = 'url(http://localhost:5000' + data.user.avatar_url + ')';
+        el.style.backgroundImage = 'url(https://collabspacesi156-production.up.railway.app' + data.user.avatar_url + ')';
         el.style.backgroundSize = 'cover';
         el.textContent = '';
       });
@@ -167,7 +167,7 @@ async function uploadResource() {
 
   try {
     const token = getToken();
-    const res   = await fetch('http://localhost:5000/api/resources', {
+    const res   = await fetch('https://collabspacesi156-production.up.railway.app/api/resources', {
       method:  'POST',
       headers: { Authorization: `Bearer ${token}` },
       body:    formData,
@@ -304,7 +304,7 @@ function typeIcon(t) {
 async function downloadResource(id) {
   try {
     const data = await apiFetch(`/resources/${id}/download`, { method: 'POST' });
-    if (data.url) window.open(`http://localhost:5000${data.url}`, '_blank');
+    if (data.url) window.open(`https://collabspacesi156-production.up.railway.app${data.url}`, '_blank');
   } catch (err) {
     toast('❌', err.message);
   }
@@ -321,7 +321,7 @@ function initChat() {
   const user = window._currentUser;
   if (!user) return;
   currentUsername = `${user.first_name} ${user.last_name}`;
-  socket = io('http://localhost:5000');
+  socket = io('https://collabspacesi156-production.up.railway.app');
 
   socket.on('receive_message', (data) => {
     const type = data.username === currentUsername ? 'user' : 'bot';
@@ -578,7 +578,7 @@ async function uploadAvatar() {
 
   try {
     const token = getToken();
-    const res = await fetch('http://localhost:5000/api/resources/avatar', {
+    const res = await fetch('https://collabspacesi156-production.up.railway.app/api/resources/avatar', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
       body: formData,
@@ -587,7 +587,7 @@ async function uploadAvatar() {
     if (!res.ok) throw new Error(data.message);
 
     // Update avatar in navbar
-    const avatarUrl = `http://localhost:5000${data.avatar_url}?t=${Date.now()}`;
+    const avatarUrl = `https://collabspacesi156-production.up.railway.app${data.avatar_url}?t=${Date.now()}`;
     document.querySelectorAll('.avatar').forEach(el => {
       if (el.tagName === 'INPUT') return;
       el.style.backgroundImage = `url(${avatarUrl})`;
@@ -668,7 +668,7 @@ async function loadLeaderboard() {
           ${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}
         </div>
         <div class="avatar" style="width:48px;height:48px;font-size:1rem;background:${i===0?'linear-gradient(135deg,#f59e0b,#ef4444)':'var(--grad)'}">
-          ${u.avatar_url ? `<img src="http://localhost:5000${u.avatar_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">` : `${u.first_name[0]}${u.last_name[0]}`}
+          ${u.avatar_url ? `<img src="https://collabspacesi156-production.up.railway.app${u.avatar_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">` : `${u.first_name[0]}${u.last_name[0]}`}
         </div>
         <div style="flex:1">
           <div style="font-weight:700;font-size:1rem">${u.first_name} ${u.last_name}</div>
@@ -733,7 +733,7 @@ async function checkDbStatus() {
   const landingDot  = document.getElementById("landing-db-dot");
   const landingText = document.getElementById("landing-db-text");
   try {
-    const res  = await fetch('http://localhost:5000/api/db-status');
+    const res  = await fetch('https://collabspacesi156-production.up.railway.app/api/db-status');
     const data = await res.json();
     const dot  = document.getElementById('db-status-dot');
     const text = document.getElementById('db-status-text');
@@ -774,7 +774,7 @@ async function sendContactMessage() {
   if (!name || !email || !message) { toast('⚠️', 'Please fill all fields'); return; }
 
   try {
-    const res  = await fetch('http://localhost:5000/api/contact', {
+    const res  = await fetch('https://collabspacesi156-production.up.railway.app/api/contact', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ name, email, message }),
@@ -793,7 +793,7 @@ async function sendContactMessage() {
 
 async function loadAdminMessages() {
   try {
-    const res  = await fetch('http://localhost:5000/api/contact');
+    const res  = await fetch('https://collabspacesi156-production.up.railway.app/api/contact');
     const data = await res.json();
     const container = document.getElementById('admin-messages');
     if (!container) return;
@@ -821,7 +821,7 @@ async function loadAdminMessages() {
 
 async function showPublicProjects() {
   try {
-    const data = await fetch('http://localhost:5000/api/projects').then(r => r.json());
+    const data = await fetch('https://collabspacesi156-production.up.railway.app/api/projects').then(r => r.json());
     
     // Create a simple modal to show projects
     const existing = document.getElementById('public-projects-modal');
